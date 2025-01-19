@@ -6,7 +6,7 @@ import Home from "./pages/Home/Home";
 
 function App() {
   return (
-    <Router>
+    <Router basename="/react3d/">
       <Routes>
         <Route path="/*" element={<Home />} />
         {/* <Route path="/" element={<Cube />} /> */}
