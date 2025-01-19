@@ -40,15 +40,14 @@ const createTextTexture = (text: string, color: string) => {
   return new THREE.CanvasTexture(canvas);
 };
 
-interface CubeProps {
+interface props {
   setData: React.Dispatch<React.SetStateAction<any>>;
 }
 
-const Cube: FC<CubeProps> = ({ setData }) => {
+const Cube: FC<props> = ({ setData }) => {
   const renderer = useRef<THREE.WebGLRenderer | null>(null);
   const navigate = useNavigate();
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  //   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const scene = new THREE.Scene();
@@ -62,20 +61,18 @@ const Cube: FC<CubeProps> = ({ setData }) => {
     const controls = new OrbitControls(camera, renderer.current.domElement);
     controls.enableZoom = false;
     controls.enablePan = false;
-    // renderer.current.setSize(dimensions.width, dimensions.height);
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
 
-    const updateDimensions = () => {
+    const updateParentSize = () => {
       if (containerRef.current && renderer.current) {
         const { width, height } = containerRef.current.getBoundingClientRect();
         renderer.current.setSize(width, height);
-        // setDimensions({ width, height });
       }
     };
 
-    updateDimensions();
-    window.addEventListener("resize", updateDimensions);
+    updateParentSize();
+    window.addEventListener("resize", updateParentSize);
 
     function onDoubleClick(event: MouseEvent) {
       const rect = renderer.current!.domElement.getBoundingClientRect();
@@ -85,19 +82,19 @@ const Cube: FC<CubeProps> = ({ setData }) => {
       raycaster.setFromCamera(pointer, camera);
       const intersects = raycaster.intersectObjects(scene.children);
       if (intersects.length > 0) {
-        const faceIndex = Math.floor(intersects[0].face!.materialIndex);
-        const faceText = Array.from(textColorMap.keys())[faceIndex];
+        const sideIndex = Math.floor(intersects[0].face!.materialIndex);
+        const sideText = Array.from(textColorMap.keys())[sideIndex];
         const newData = {
-          id: faceIndex,
+          id: sideIndex,
           UUID: `${intersects[0].object.uuid}`,
-          text: `${faceText}`,
+          text: `${sideText}`,
           top: event.clientY - rect.top,
           left: event.clientX - rect.left,
         };
 
         localStorage.setItem("cubeData", JSON.stringify(newData));
         setData(newData);
-        navigate(`/side/:${faceIndex}`);
+        navigate(`/side/:${sideIndex}`);
       }
     }
 
@@ -105,11 +102,13 @@ const Cube: FC<CubeProps> = ({ setData }) => {
 
     renderer.current.setClearColor(0x000000, 0);
 
-    const materials = Array.from(
-      textColorMap,
-      ([text, color]) =>
+    const materials: THREE.MeshBasicMaterial[] = [];
+
+    textColorMap.forEach((color, text) => {
+      materials.push(
         new THREE.MeshBasicMaterial({ map: createTextTexture(text, color) })
-    );
+      );
+    });
 
     const geometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
     const cube = new THREE.Mesh(geometry, materials);
@@ -134,7 +133,7 @@ const Cube: FC<CubeProps> = ({ setData }) => {
     requestAnimationFrame(render);
 
     return () => {
-      window.removeEventListener("resize", updateDimensions);
+      window.removeEventListener("resize", updateParentSize);
     };
   }, []);
 
